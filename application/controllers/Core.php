@@ -12,9 +12,10 @@ class Core extends CI_Controller {
      public $BaseUrl;
      public $Url;
      public $connection;
+     private static $secret ="VWgXznNFyxWRee";
 
 
-     public function __construct(){
+     function __construct(){
          $this->curl_headers = array(
                                      'Fineract-Platform-TenantID:default',
                                      "X-HTTP-Method-Override: POST",
@@ -26,7 +27,7 @@ class Core extends CI_Controller {
              CURLOPT_HEADER         => false,    // don't return headers
              CURLOPT_FOLLOWLOCATION => true,     // follow redirects
              CURLOPT_ENCODING       => "",       // handle all encodings
-             CURLOPT_USERAGENT      => "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)", // who am i
+             CURLOPT_USERAGENT      => "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:51.0) Gecko/20100101 Firefox/51.0", // who am i
              CURLOPT_AUTOREFERER    => true,     // set referer on redirect
              CURLOPT_CONNECTTIMEOUT => 120,      // timeout on connect
              CURLOPT_TIMEOUT        => 120,      // timeout on response
@@ -43,38 +44,45 @@ class Core extends CI_Controller {
      }
 
      public function index(){
+         $data = $this->getPostedData();
          //$client = $this->findClientByPhoneNumber('0707842711');
          $client = $this->findClientByPhoneNumber('0707070707');
          $clientID = $client->entityId;
          $clientSavingsAccounts = $this->getClientActiveSavingsAccounts($clientID);
          $data['firstClientSavingsAccountID'] = ($clientSavingsAccounts[0]->id);
          $data['firstClientSavingsAccountNumber'] = ($clientSavingsAccounts[0]->accountNo);
-         $data['amount'] = 3000;
          $this->makeDepositToClientSavingsAccount($data);
      }
 
-	public function queryServer($isPostRequest=false, $postBody = null)
+     function getPostedData(){
+         $data = null;
+         
+         $data['receipt']= $_POST["receipt"];
+         $data['type'] = $_POST["type"];
+         $data['time'] = $_POST["time"];
+         $data['phoneNumber'] = $_POST["phonenumber"];
+         $data['name'] = $_POST["name"];
+         $data['account'] = $_POST["account"];
+         $data['amount'] = $_POST["amount"];
+         $data['postBalance'] = $_POST["postbalance"];
+         $data['transactionCost'] = $_POST["transactioncost"];
+         $data['secret'] = $_POST["secret"];
+
+         //check If Phone Number Has Been Provided
+         if((!is_null($data['phoneNumber'])) && (strlen($data['phoneNumber'])>0)) {
+             //check if secret provided is Authentic
+             if($data['secret'] == $this->secret) {
+                 return $data;
+             }else{
+                 print_r("Secret Key Provided is not Authentic");
+             }
+         }else{
+             print_r("Phone Number provided Is not Correct");
+         }
+     }
+
+	function queryServer($isPostRequest=false, $postBody = null)
 	{
-
-        /*
-        $receipt = $_POST["receipt"];
-        $type = $_POST["type"];
-        $time = $_POST["time"];
-        $phoneNumber = $_POST["phonenumber"];
-        $name = $_POST["name"];
-        $account = $_POST["account"];
-        $amount = $_POST["amount"];
-        $postBalance = $_POST["postbalance"];
-        $transactionCost = $_POST["transactioncost"];
-        $secret = $_POST["secret"];
-        */
-
-
-
-
-//        if((is_null($phoneNumber)) || (strlen($phoneNumber)<1)){
-//            return;
-//        }
 
         $this->connection = curl_init( $this->Url );
         curl_setopt_array( $this->connection, $this->curl_options );
@@ -157,13 +165,13 @@ class Core extends CI_Controller {
         $jsonPostBody = array(
                 "locale" => "en",
                 "dateFormat" => "dd MMMM yyyy",
-                "transactionDate" => "07 March 2017",
+                "transactionDate" => $data['time'],
                 "transactionAmount" => $data["amount"],
                 "paymentTypeId" => "6",
                 "accountNumber" => $data["firstClientSavingsAccountNumber"],
                 "checkNumber" => "",
                 "routingCode" => "",
-                "receiptNumber" => "JCI000106032017",
+                "receiptNumber" => $data["receiptNumber"],
                 "bankNumber" => ""
         );
         $postBody=json_encode($jsonPostBody);
