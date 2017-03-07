@@ -16,7 +16,9 @@ class Core extends CI_Controller {
 
      public function __construct(){
          $this->curl_headers = array(
-                                     'Fineract-Platform-TenantID:default'
+                                     'Fineract-Platform-TenantID:default',
+                                     "X-HTTP-Method-Override: POST",
+                                     'Content-Type: application/json'
                                  );
          $this->BaseUrl ="https://192.168.0.50/fineract-provider/api/v1/";
          $this->curl_options = array(
@@ -41,13 +43,17 @@ class Core extends CI_Controller {
      }
 
      public function index(){
+         //$client = $this->findClientByPhoneNumber('0707842711');
          $client = $this->findClientByPhoneNumber('0707070707');
-         $clientID =$client->entityId;
-         $clientData = $this->getClientData($clientID);
-         print_r($clientData);
+         $clientID = $client->entityId;
+         $clientSavingsAccounts = $this->getClientActiveSavingsAccounts($clientID);
+         $data['firstClientSavingsAccountID'] = ($clientSavingsAccounts[0]->id);
+         $data['firstClientSavingsAccountNumber'] = ($clientSavingsAccounts[0]->accountNo);
+         $data['amount'] = 3000;
+         $this->makeDepositToClientSavingsAccount($data);
      }
 
-	public function queryServer()
+	public function queryServer($isPostRequest=false, $postBody = null)
 	{
 
         /*
@@ -72,6 +78,13 @@ class Core extends CI_Controller {
 
         $this->connection = curl_init( $this->Url );
         curl_setopt_array( $this->connection, $this->curl_options );
+
+        //if this is a post request /*default is GET*/
+        if($isPostRequest) {
+            curl_setopt($this->connection, CURLOPT_POST, 1);
+            curl_setopt($this->connection, CURLOPT_POSTFIELDS, $postBody);
+        }
+
         $this->curl_output = curl_exec( $this->connection );
         $this->curl_errorCode  = curl_errno( $this->connection );
         $this->curl_errorMessage  = curl_error( $this->connection );
@@ -93,14 +106,75 @@ class Core extends CI_Controller {
 
     }
 
-    public function getClientData($ClientID){
+    function getClientData($ClientID){
         $this->Url =$this->BaseUrl."clients/".$ClientID;
         $clientData = $this->queryServer();
 
         //if Client Exists
-        if(!array_key_exists('errors',$clientData)>0){
+        if(!array_key_exists('errors',$clientData)){
             return $clientData;
         }
 
     }
+
+    function getClientAccounts($ClientID){
+        $this->Url =$this->BaseUrl."clients/".$ClientID."/accounts";
+        $clientAccounts = $this->queryServer();
+
+        //if Client Exists
+        if(!array_key_exists('errors',$clientAccounts)){
+            return $clientAccounts;
+        }
+
+    }
+
+    function getClientActiveSavingsAccounts($ClientID){
+        $ClientAccounts = $this->getClientAccounts($ClientID);
+
+        //if Client Has Savings Account(s)
+        if(array_key_exists('savingsAccounts',$ClientAccounts)){
+
+            $ActiveSavingsAccounts=array();
+
+            $savingsAccounts = $ClientAccounts->savingsAccounts;
+            foreach ($savingsAccounts as $savingsAccount){
+                if($savingsAccount->status->value == 'Active'){
+                    array_push($ActiveSavingsAccounts,$savingsAccount);
+                }
+            }
+
+            return $ActiveSavingsAccounts;
+        }
+
+    }
+
+    function makeDepositToClientSavingsAccount($data){
+
+
+        $this->Url = $this->BaseUrl."savingsaccounts/".$data['firstClientSavingsAccountID']."/transactions?command=deposit";
+
+        echo $this->Url."<br>";
+        $jsonPostBody = array(
+                "locale" => "en",
+                "dateFormat" => "dd MMMM yyyy",
+                "transactionDate" => "07 March 2017",
+                "transactionAmount" => $data["amount"],
+                "paymentTypeId" => "6",
+                "accountNumber" => $data["firstClientSavingsAccountNumber"],
+                "checkNumber" => "",
+                "routingCode" => "",
+                "receiptNumber" => "JCI000106032017",
+                "bankNumber" => ""
+        );
+        $postBody=json_encode($jsonPostBody);
+        $outPut = $this->queryServer(true,$postBody);
+
+        print_r($postBody);
+        print_r($outPut);
+    }
+
+
+
+
+
 }
