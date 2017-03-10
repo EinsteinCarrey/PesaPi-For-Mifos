@@ -3,19 +3,21 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Core extends CI_Controller {
 
-     public $curl_headers;
-     public $curl_options;
-     public $curl_output;
-     public $curl_errorCode;
-     public $curl_errorMessage;
-     public $curl_OutputHeader;
-     public $BaseUrl;
-     public $Url;
-     public $connection;
-     private static $secret ="VWgXznNFyxWRee";
+     private $errorMessage;
+     private $curl_headers;
+     private $curl_options;
+     private $curl_output;
+     private $curl_errorCode;
+     private $curl_errorMessage;
+     private $curl_OutputHeader;
+     private $BaseUrl;
+     private $Url;
+     private $connection;
+     private $secret ='FWv{VvB7#dSsJ(\S5_f)3C3S';
 
 
-     function __construct(){
+    function __construct(){
+         parent::__construct();
          $this->curl_headers = array(
                                      'Fineract-Platform-TenantID:default',
                                      "X-HTTP-Method-Override: POST",
@@ -40,13 +42,13 @@ class Core extends CI_Controller {
              CURLOPT_SSL_VERIFYHOST => false,
              CURLOPT_HTTPHEADER => $this->curl_headers
          );
+         $this->errorMessage = array();;
 
      }
 
-     public function index(){
+    public function index(){
          $data = $this->getPostedData();
-         //$client = $this->findClientByPhoneNumber('0707842711');
-         $client = $this->findClientByPhoneNumber('0707070707');
+         $client = $this->findClientByPhoneNumber($data['phoneNumber']);
          $clientID = $client->entityId;
          $clientSavingsAccounts = $this->getClientActiveSavingsAccounts($clientID);
          $data['firstClientSavingsAccountID'] = ($clientSavingsAccounts[0]->id);
@@ -54,69 +56,65 @@ class Core extends CI_Controller {
          $this->makeDepositToClientSavingsAccount($data);
      }
 
-     function getPostedData(){
+    function getPostedData(){
          $data = null;
-         
+
          $data['receipt']= $_POST["receipt"];
          $data['type'] = $_POST["type"];
          $data['time'] = $_POST["time"];
          $data['phoneNumber'] = $_POST["phonenumber"];
          $data['name'] = $_POST["name"];
          $data['account'] = $_POST["account"];
-         $data['amount'] = $_POST["amount"];
-         $data['postBalance'] = $_POST["postbalance"];
+         $data['amount'] = ($_POST["amount"]/100); //Convert Amount From cents To Shillings
+         $data['postBalance'] = ($_POST["postbalance"]/100); //Convert Balance From Cents To shillings
          $data['transactionCost'] = $_POST["transactioncost"];
          $data['secret'] = $_POST["secret"];
 
-         //check If Phone Number Has Been Provided
-         if((!is_null($data['phoneNumber'])) && (strlen($data['phoneNumber'])>0)) {
-             //check if secret provided is Authentic
-             if($data['secret'] == $this->secret) {
-                 return $data;
-             }else{
-                 print_r("Secret Key Provided is not Authentic");
-             }
-         }else{
-             print_r("Phone Number provided Is not Correct");
+         if($this->dataHasErrors($data)) {
+             print_r($this->errorMessage);
+             die();
          }
+         return $data;
      }
 
-	function queryServer($isPostRequest=false, $postBody = null)
-	{
+    function dataHasErrors($data){
 
-        $this->connection = curl_init( $this->Url );
-        curl_setopt_array( $this->connection, $this->curl_options );
+         //check If Phone Number Has Been Provided
+         if((is_null($data['phoneNumber'])) || (strlen($data['phoneNumber'])==0)) {
+             array_push($this->errorMessage,"Phone Number Has Not been provided ");
+         }
 
-        //if this is a post request /*default is GET*/
-        if($isPostRequest) {
-            curl_setopt($this->connection, CURLOPT_POST, 1);
-            curl_setopt($this->connection, CURLOPT_POSTFIELDS, $postBody);
-        }
+         //check If Phone Number Provided is kenyan && is correcct
+         if(! (substr($data['phoneNumber'],0,3) == '254') && (strlen($data['phoneNumber'])==12)) {
+             array_push($this->errorMessage,"Phone Number provided is not valid ");
+         }
 
-        $this->curl_output = curl_exec( $this->connection );
-        $this->curl_errorCode  = curl_errno( $this->connection );
-        $this->curl_errorMessage  = curl_error( $this->connection );
-        $this->curl_OutputHeader  = curl_getinfo( $this->connection );
-        curl_close( $this->connection );
+         //check if secret provided is Authentic
+         if($data['secret'] != $this->secret) {
+             array_push($this->errorMessage,"Secret Key Provided is not Authentic");
+         }
 
-        return json_decode($this->curl_output);
+         return sizeof($this->errorMessage) > 0;
+     }
 
-	}
-
-	public function findClientByPhoneNumber($phoneNumber){
+    function findClientByPhoneNumber($phoneNumber){
+        $phoneNumber= substr($phoneNumber,3);
         $this->Url =$this->BaseUrl."search?query=".$phoneNumber;
-        $client = $this->queryServer();
+        $client = $this->queryMifosServer();
 
-        //if Client exists
-        if(sizeof($client)>0){
-            return $client[0];
+        //check if Client exists
+        if(sizeof($client)<1){
+            print_r("There is no recorded client with phone number ". $phoneNumber );
+            die();
         }
+
+        return $client[0];
 
     }
 
     function getClientData($ClientID){
         $this->Url =$this->BaseUrl."clients/".$ClientID;
-        $clientData = $this->queryServer();
+        $clientData = $this->queryMifosServer();
 
         //if Client Exists
         if(!array_key_exists('errors',$clientData)){
@@ -127,7 +125,7 @@ class Core extends CI_Controller {
 
     function getClientAccounts($ClientID){
         $this->Url =$this->BaseUrl."clients/".$ClientID."/accounts";
-        $clientAccounts = $this->queryServer();
+        $clientAccounts = $this->queryMifosServer();
 
         //if Client Exists
         if(!array_key_exists('errors',$clientAccounts)){
@@ -156,33 +154,63 @@ class Core extends CI_Controller {
 
     }
 
-    function makeDepositToClientSavingsAccount($data){
+    function makeDepositToClientSavingsAccount($data)
+    {
 
 
-        $this->Url = $this->BaseUrl."savingsaccounts/".$data['firstClientSavingsAccountID']."/transactions?command=deposit";
-
-        echo $this->Url."<br>";
+        $this->Url = $this->BaseUrl . "savingsaccounts/" . $data['firstClientSavingsAccountID'] . "/transactions?command=deposit";
         $jsonPostBody = array(
-                "locale" => "en",
-                "dateFormat" => "dd MMMM yyyy",
-                "transactionDate" => $data['time'],
-                "transactionAmount" => $data["amount"],
-                "paymentTypeId" => "6",
-                "accountNumber" => $data["firstClientSavingsAccountNumber"],
-                "checkNumber" => "",
-                "routingCode" => "",
-                "receiptNumber" => $data["receiptNumber"],
-                "bankNumber" => ""
+            "locale" => "en",
+            "dateFormat" => "dd MMMM yyyy",
+            "transactionDate" => $this->getDateFromEpochSecondsTimestamp($data['time']),
+            "transactionAmount" => $data["amount"],
+            "paymentTypeId" => "6",
+            "accountNumber" => $data["firstClientSavingsAccountNumber"],
+            "checkNumber" => "",
+            "routingCode" => "",
+            "receiptNumber" => $data["receipt"],
+            "bankNumber" => ""
         );
-        $postBody=json_encode($jsonPostBody);
-        $outPut = $this->queryServer(true,$postBody);
+        $postBody = json_encode($jsonPostBody);
+        $outPut = $this->queryMifosServer(true, $postBody);
 
         print_r($postBody);
         print_r($outPut);
+
+
     }
 
+    function getDateFromEpochSecondsTimestamp($epochTimestamp){
 
+        $months = explode(" ","Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec");
 
+        $time =  date("d", $epochTimestamp)." "; //transaction Date
+        $time .=  $months[date("m", $epochTimestamp)-1]." "; //append moths short Name
+        $time .=  date("Y", $epochTimestamp); // append year
 
+        return $time;
+    }
 
+    function queryMifosServer($isPostRequest=false, $postBody = null)
+    {
+
+        $this->connection = curl_init( $this->Url );
+        curl_setopt_array( $this->connection, $this->curl_options );
+
+        //if this is a post request /*default is GET*/
+        if($isPostRequest) {
+            curl_setopt($this->connection, CURLOPT_POST, 1);
+            curl_setopt($this->connection, CURLOPT_POSTFIELDS, $postBody);
+        }
+
+        $this->curl_output = curl_exec( $this->connection );
+        $this->curl_errorCode  = curl_errno( $this->connection );
+        $this->curl_errorMessage  = curl_error( $this->connection );
+        $this->curl_OutputHeader  = curl_getinfo( $this->connection );
+        curl_close( $this->connection );
+
+        return json_decode($this->curl_output);
+
+    }
+    
 }
