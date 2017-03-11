@@ -23,7 +23,7 @@ class Core extends CI_Controller {
                                      "X-HTTP-Method-Override: POST",
                                      'Content-Type: application/json'
                                  );
-         $this->BaseUrl ="https://192.168.0.50/fineract-provider/api/v1/";
+         $this->BaseUrl ="https://127.0.0.1/fineract-provider/api/v1/";
          $this->curl_options = array(
              CURLOPT_RETURNTRANSFER => true,     // return web page
              CURLOPT_HEADER         => false,    // don't return headers
@@ -35,7 +35,7 @@ class Core extends CI_Controller {
              CURLOPT_TIMEOUT        => 120,      // timeout on response
              CURLOPT_MAXREDIRS      => 10,       // stop after 10 redirects
              CURLOPT_HTTPAUTH       => CURLAUTH_BASIC,
-             CURLOPT_USERPWD        => "administrator:058982.0",
+             CURLOPT_USERPWD        => "phone:kennyRodgers@JCI",
 
              //Accept Self signed certificates
              CURLOPT_SSL_VERIFYPEER => false,
