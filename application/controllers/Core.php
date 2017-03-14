@@ -13,8 +13,12 @@ class Core extends CI_Controller {
      private $BaseUrl;
      private $Url;
      private $connection;
+     private $ClientAccounts;
      private $secret ='FWv{VvB7#dSsJ(\S5_f)3C3S';
 
+    //List of account to where the amount will be deposited
+    //Ordered by priority level
+    private $priorityList = array('loanAccounts','savingsAccounts');
 
     function __construct(){
          parent::__construct();
@@ -23,7 +27,9 @@ class Core extends CI_Controller {
                                      "X-HTTP-Method-Override: POST",
                                      'Content-Type: application/json'
                                  );
-         $this->BaseUrl ="https://127.0.0.1/fineract-provider/api/v1/";
+
+         //ToDo(Einstein): check This Before Deploying
+         $this->BaseUrl ="https://192.168.0.50/fineract-provider/api/v1/";
          $this->curl_options = array(
              CURLOPT_RETURNTRANSFER => true,     // return web page
              CURLOPT_HEADER         => false,    // don't return headers
@@ -35,6 +41,7 @@ class Core extends CI_Controller {
              CURLOPT_TIMEOUT        => 120,      // timeout on response
              CURLOPT_MAXREDIRS      => 10,       // stop after 10 redirects
              CURLOPT_HTTPAUTH       => CURLAUTH_BASIC,
+             //ToDo(Einstein): check This Before Deploying
              CURLOPT_USERPWD        => "phone:kennyRodgers@JCI",
 
              //Accept Self signed certificates
@@ -47,13 +54,19 @@ class Core extends CI_Controller {
      }
 
     public function index(){
-         $data = $this->getPostedData();
-         $client = $this->findClientByPhoneNumber($data['phoneNumber']);
-         $clientID = $client->entityId;
-         $clientSavingsAccounts = $this->getClientActiveSavingsAccounts($clientID);
-         $data['firstClientSavingsAccountID'] = ($clientSavingsAccounts[0]->id);
-         $data['firstClientSavingsAccountNumber'] = ($clientSavingsAccounts[0]->accountNo);
-         $this->makeDepositToClientSavingsAccount($data);
+         $data =  $this->getPostedData();
+        $client = $this->findClientByPhoneNumber($data['phoneNumber']);
+        $data['clientID'] = $client->entityId;
+        $this->ClientAccounts = $this->getClientAccounts($data['clientID']);
+
+        if($this->clientHasActiveLoanAccount()){
+            $result = $this->makeRepaymentToALoanAccount($data);
+        }else{
+            $result = $this->makeDepositToClientSavingsAccount($data);
+        }
+
+        print_r($result);
+        return;
      }
 
     function getPostedData(){
@@ -134,15 +147,27 @@ class Core extends CI_Controller {
 
     }
 
-    function getClientActiveSavingsAccounts($ClientID){
-        $ClientAccounts = $this->getClientAccounts($ClientID);
+    function clientHasActiveLoanAccount(){
+            $clientHasAnActiveLoanAccount = false;
+            if(array_key_exists('loanAccounts',$this->ClientAccounts)){
+                $loanAccounts = $this->ClientAccounts->loanAccounts;
+                foreach ($loanAccounts as $loanAccount){
+                    if($loanAccount->status->value == 'Active'){
+                        $clientHasAnActiveLoanAccount = true;
+                    }
+                }
+            }
 
+            return $clientHasAnActiveLoanAccount;
+    }
+
+    function getClientActiveSavingsAccounts(){
         //if Client Has Savings Account(s)
-        if(array_key_exists('savingsAccounts',$ClientAccounts)){
+        if(array_key_exists('savingsAccounts',$this->ClientAccounts)){
 
             $ActiveSavingsAccounts=array();
 
-            $savingsAccounts = $ClientAccounts->savingsAccounts;
+            $savingsAccounts = $this->ClientAccounts->savingsAccounts;
             foreach ($savingsAccounts as $savingsAccount){
                 if($savingsAccount->status->value == 'Active'){
                     array_push($ActiveSavingsAccounts,$savingsAccount);
@@ -154,18 +179,65 @@ class Core extends CI_Controller {
 
     }
 
-    function makeDepositToClientSavingsAccount($data)
+    function getClientActiveLoanAccounts(){
+        //if Client Has Savings Account(s)
+        if(array_key_exists('loanAccounts',$this->ClientAccounts)){
+
+            $ActiveLoanAccounts=array();
+
+            $loanAccounts = $this->ClientAccounts->loanAccounts;
+            foreach ($loanAccounts as $loanAccount){
+                if($loanAccount->status->value == 'Active'){
+                    array_push($ActiveLoanAccounts,$loanAccount);
+                }
+            }
+
+            return $ActiveLoanAccounts;
+        }
+
+    }
+
+    function makeRepaymentToALoanAccount($data)
     {
 
+        $clientsLoanAccounts = $this->getClientActiveLoanAccounts($data['clientID'] );
 
-        $this->Url = $this->BaseUrl . "savingsaccounts/" . $data['firstClientSavingsAccountID'] . "/transactions?command=deposit";
+        $firstLoanAccountID = ($clientsLoanAccounts[0]->id);
+        $firstLoanAccountNumber= ($clientsLoanAccounts[0]->accountNo);
+
+        $this->Url = $this->BaseUrl . "loans/" . $firstLoanAccountID . "/transactions?command=repayment";
         $jsonPostBody = array(
             "locale" => "en",
             "dateFormat" => "dd MMMM yyyy",
             "transactionDate" => $this->getDateFromEpochSecondsTimestamp($data['time']),
             "transactionAmount" => $data["amount"],
             "paymentTypeId" => "6",
-            "accountNumber" => $data["firstClientSavingsAccountNumber"],
+            "accountNumber" => $firstLoanAccountNumber,
+            "checkNumber" => "",
+            "routingCode" => "",
+            "receiptNumber" => $data["receipt"],
+            "bankNumber" => ""
+        );
+
+        $postBody = json_encode($jsonPostBody);
+        $outPut = $this->queryMifosServer(true, $postBody);
+        return $outPut;
+    }
+
+    function makeDepositToClientSavingsAccount($data)
+    {
+        $clientSavingsAccounts = $this->getClientActiveSavingsAccounts($data['clientID'] );
+        $firstClientSavingsAccountID = ($clientSavingsAccounts[0]->id);
+        $firstClientSavingsAccountNumber = ($clientSavingsAccounts[0]->accountNo);
+
+        $this->Url = $this->BaseUrl . "savingsaccounts/" . $firstClientSavingsAccountID . "/transactions?command=deposit";
+        $jsonPostBody = array(
+            "locale" => "en",
+            "dateFormat" => "dd MMMM yyyy",
+            "transactionDate" => $this->getDateFromEpochSecondsTimestamp($data['time']),
+            "transactionAmount" => $data["amount"],
+            "paymentTypeId" => "6",
+            "accountNumber" => $firstClientSavingsAccountNumber,
             "checkNumber" => "",
             "routingCode" => "",
             "receiptNumber" => $data["receipt"],
@@ -173,11 +245,7 @@ class Core extends CI_Controller {
         );
         $postBody = json_encode($jsonPostBody);
         $outPut = $this->queryMifosServer(true, $postBody);
-
-        print_r($postBody);
-        print_r($outPut);
-
-
+        return $outPut;
     }
 
     function getDateFromEpochSecondsTimestamp($epochTimestamp){
