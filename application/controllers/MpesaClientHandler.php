@@ -16,6 +16,7 @@ class MpesaClientHandler extends Core {
         parent::__construct();
 
         $this->load->model('ApiGateway');
+        $this->load->model('LocalDBHandler');
 
     }
 
@@ -170,6 +171,7 @@ class MpesaClientHandler extends Core {
 
         $postBody = json_encode($jsonPostBody);
         $outPut = $this->queryMifosServer(true, $postBody);
+        $outPut["transactionParameters"] = $jsonPostBody;
         return $outPut;
     }
 
@@ -194,6 +196,7 @@ class MpesaClientHandler extends Core {
         );
         $postBody = json_encode($jsonPostBody);
         $outPut = $this->queryMifosServer(true, $postBody);
+        $outPut["transactionParameters"] = $jsonPostBody;
         return $outPut;
     }
 

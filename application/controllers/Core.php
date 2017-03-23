@@ -5,12 +5,7 @@ class Core extends CI_Controller {
 
     //ToDo(Einstein): check This Before Deploying
      public $environment = "testing"; //production
-     private $Url;
-     private $connection;
 
-    //List of account to where the amount will be deposited
-    //Ordered by priority level
-    private $priorityList = array('loanAccounts','savingsAccounts');
 
     public function receivePaymentViaMpesa(){
 
@@ -31,6 +26,8 @@ class Core extends CI_Controller {
             $result = $this->MpesaClientHandler_->makeDepositToClientSavingsAccount($data);
         }
 
+        $this->LocalDBHandler->recordTransactionPostedToMifosDatabase($result['transactionParameters']);
+
         return $result;
      }
 
@@ -41,6 +38,7 @@ class Core extends CI_Controller {
 
      }
 
-
+    public function index(){
+    }
 
 }

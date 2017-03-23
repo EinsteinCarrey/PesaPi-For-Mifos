@@ -12,7 +12,7 @@ class SMSCenter extends Core {
 
 
     private $uwaziiPassword ='IVPwWOgW';
-    private $uwaziiUsername ='jamboca pitalict';
+    private $uwaziiUsername ='jambocapitalict';
 
     function __construct(){
         parent::__construct();
@@ -22,7 +22,7 @@ class SMSCenter extends Core {
 
     function sendMessageToClient($data = null){
 
-        $data['messageSender'] = "Jambo Cap";
+        $data['messageSender'] = "Uwazii";
         $data['messageBody'] = "Testing message from Einstein";
         $data['destinationPhoneNumber'] = "254707842711";
 
@@ -47,7 +47,9 @@ class SMSCenter extends Core {
         $data['postBody'] = json_encode($jsonData);
         $data['isPostRequest'] = true;
 
-        $outPut = $this->ApiGateway->queryUwaziiSmsServer($data);
+
+        print_r( $data);
+        $outPut = $this->ApiGateway->queryUwaziiSmsServer( $data );
         print_r($outPut);
     }
 

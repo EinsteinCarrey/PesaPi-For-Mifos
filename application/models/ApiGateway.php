@@ -8,13 +8,11 @@
 
 class ApiGateway extends CI_Model{
 
-
     private $BaseUrl;
     private $curl_headers = array();
     private $curl_options;
     private $curl;
     private $errorMessage;
-
 
     function __construct(){
         parent::__construct();
