@@ -19,7 +19,6 @@ class SMSCenter extends Core {
         $this->load->model('ApiGateway');
     }
 
-
     function sendMessageToClient($data = null){
 
         $data['messageSender'] = "Uwazii";
@@ -47,8 +46,6 @@ class SMSCenter extends Core {
         $data['postBody'] = json_encode($jsonData);
         $data['isPostRequest'] = true;
 
-
-        print_r( $data);
         $outPut = $this->ApiGateway->queryUwaziiSmsServer( $data );
         print_r($outPut);
     }

@@ -6,18 +6,35 @@
  * Date: 3/20/2017
  * Time: 12:14 PM
  */
-class MpesaClientHandler extends Core {
+
+class MpesaClientHandler extends CI_Controller {
 
 
     private $secret ='FWv{VvB7#dSsJ(\S5_f)3C3S';
     private $ClientAccounts;
+    private $errorMessage;
 
     function __construct(){
         parent::__construct();
-
         $this->load->model('ApiGateway');
         $this->load->model('LocalDBHandler');
+    }
 
+    function getPesaPiPostedData(){
+        $data = null;
+
+        $data['receipt']= $_POST["receipt"];
+        $data['type'] = $_POST["type"];
+        $data['time'] = $_POST["time"];
+        $data['phoneNumber'] = $_POST["phonenumber"];
+        $data['name'] = $_POST["name"];
+        $data['account'] = $_POST["account"];
+        $data['amount'] = ($_POST["amount"]/100); //Convert Amount From cents To Shillings
+        $data['postBalance'] = ($_POST["postbalance"]/100); //Convert Balance From Cents To shillings
+        $data['transactionCost'] = $_POST["transactioncost"];
+        $data['secret'] = $_POST["secret"];
+
+        return $data;
     }
 
     function dataHasErrors($data){
@@ -51,7 +68,7 @@ class MpesaClientHandler extends Core {
             die();
         }
 
-        print_r( $client[0]);
+        return $client[0];
 
     }
 
@@ -72,12 +89,16 @@ class MpesaClientHandler extends Core {
 
         //if Client Exists
         if(!array_key_exists('errors',$clientAccounts)){
-            return $clientAccounts;
+            $this->ClientAccounts=$clientAccounts;
+        }else{
+            $this->ClientAccounts=null;
         }
 
     }
 
-    function clientHasActiveLoanAccount(){
+    function clientHasActiveLoanAccount($data){
+        $this->getClientAccounts($data['clientID']);
+
         $clientHasAnActiveLoanAccount = false;
         if(array_key_exists('loanAccounts',$this->ClientAccounts)){
             $loanAccounts = $this->ClientAccounts->loanAccounts;
@@ -127,27 +148,6 @@ class MpesaClientHandler extends Core {
 
     }
 
-    function getPesaPiPostedData(){
-        $data = null;
-
-        $data['receipt']= $_POST["receipt"];
-        $data['type'] = $_POST["type"];
-        $data['time'] = $_POST["time"];
-        $data['phoneNumber'] = $_POST["phonenumber"];
-        $data['name'] = $_POST["name"];
-        $data['account'] = $_POST["account"];
-        $data['amount'] = ($_POST["amount"]/100); //Convert Amount From cents To Shillings
-        $data['postBalance'] = ($_POST["postbalance"]/100); //Convert Balance From Cents To shillings
-        $data['transactionCost'] = $_POST["transactioncost"];
-        $data['secret'] = $_POST["secret"];
-
-        if($this->dataHasErrors($data)) {
-            print_r($this->errorMessage);
-            die();
-        }
-        return $data;
-    }
-
     function makeRepaymentToALoanAccount($data)
     {
         $clientsLoanAccounts = $this->getClientActiveLoanAccounts($data['clientID'] );
@@ -170,8 +170,10 @@ class MpesaClientHandler extends Core {
         );
 
         $postBody = json_encode($jsonPostBody);
-        $outPut = $this->queryMifosServer(true, $postBody);
-        $outPut["transactionParameters"] = $jsonPostBody;
+        $data['isPostRequest'] = true;
+        $data['postBody'] = $postBody;
+        $outPut = $this->ApiGateway->queryMifosServer($data);
+        $this->LocalDBHandler->recordTransactionThatHaveBeenPostedToMifosDatabase($jsonPostBody);
         return $outPut;
     }
 
@@ -195,14 +197,20 @@ class MpesaClientHandler extends Core {
             "bankNumber" => ""
         );
         $postBody = json_encode($jsonPostBody);
-        $outPut = $this->queryMifosServer(true, $postBody);
-        $outPut["transactionParameters"] = $jsonPostBody;
+        $data['isPostRequest'] = true;
+        $data['postBody'] = $postBody;
+        $outPut = $this->ApiGateway->queryMifosServer($data);
+        $this->LocalDBHandler->recordTransactionThatHaveBeenPostedToMifosDatabase($jsonPostBody);
+
         return $outPut;
     }
 
     function getDateFromEpochSecondsTimestamp($epochTimestamp){
 
-        $months = explode(" ","Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec");
+        $months = explode(
+            " ",
+            "January February March April May June July August September October November December"
+        );
 
         $time =  date("d", $epochTimestamp)." "; //transaction Date
         $time .=  $months[date("m", $epochTimestamp)-1]." "; //append moths short Name

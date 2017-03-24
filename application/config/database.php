@@ -75,9 +75,9 @@ $query_builder = TRUE;
 
 $db['default'] = array(
 	'dsn'	=> '',
-	'hostname' => 'localhost',
-	'username' => 'root',
-	'password' => 'dollyPARTON@058982',
+	'hostname' => 'mainserver.jcimainoffice.com',
+	'username' => 'remoteUser',
+	'password' => 'EINSTEIN',
 	'database' => 'pesapi',
 	'dbdriver' => 'mysqli',
 	'dbprefix' => '',

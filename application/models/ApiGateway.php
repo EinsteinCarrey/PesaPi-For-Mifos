@@ -8,24 +8,29 @@
 
 class ApiGateway extends CI_Model{
 
-    private $BaseUrl;
     private $curl_headers = array();
     private $curl_options;
     private $curl;
-    private $errorMessage;
 
     function __construct(){
         parent::__construct();
         $this->errorMessage = array();
     }
 
-    function setHttpHeaders(){
-
-        array_merge($this->curl_headers, array(
+    function setHttpPostHeaders(){
+        $this->curl_headers = array_merge($this->curl_headers, array(
                 "X-HTTP-Method-Override: POST",
                 'Content-Type: application/json'
             )
         );
+    }
+    function setGeneralHttpHeaders(){
+
+        if(ENVIRONMENT == "production") {
+            $authenticationString = "phone:kennyRodgers@JCI";
+        }else{
+            $authenticationString = "AccountForTesting:qwertyuiop";
+        }
 
         $this->curl_options = array(
             CURLOPT_RETURNTRANSFER => true,     // return web page
@@ -38,9 +43,7 @@ class ApiGateway extends CI_Model{
             CURLOPT_TIMEOUT        => 120,      // timeout on response
             CURLOPT_MAXREDIRS      => 10,       // stop after 10 redirects
             CURLOPT_HTTPAUTH       => CURLAUTH_BASIC,
-
-            //ToDo(Einstein): check This Before Deploying
-            CURLOPT_USERPWD        => "phone:kennyRodgers@JCI",
+            CURLOPT_USERPWD        => $authenticationString,
 
             //Accept Self signed certificates
             CURLOPT_SSL_VERIFYPEER => false,
@@ -50,16 +53,17 @@ class ApiGateway extends CI_Model{
     }
 
     function queryMifosServer($data){
-        $mifosBaseUrl ="https://192.168.0.50/fineract-provider/api/v1/";
+
+        if(ENVIRONMENT == "production") {
+            $mifosBaseUrl ="https://127.0.0.1/fineract-provider/api/v1/";
+        }else{
+            $mifosBaseUrl ="https://192.168.0.50/fineract-provider/api/v1/";
+        }
         $data['Url'] = $mifosBaseUrl . $data['specificQueryUrl'];
 
-        if($this->environment == "production"){
-            $this->BaseUrl ="https://127.0.0.1/fineract-provider/api/v1/";
-        }
         $this->curl_headers = array(
             'Fineract-Platform-TenantID:default'
         );
-
         return $this->queryApiServer($data);
     }
 
@@ -70,7 +74,10 @@ class ApiGateway extends CI_Model{
 
     function queryApiServer($data){
 
-        $this->setHttpHeaders();
+        if(isset($data['isPostRequest']) && ($data['isPostRequest'])) {
+            $this->setHttpPostHeaders();
+        }
+        $this->setGeneralHttpHeaders();
 
         $this->connection = curl_init( $data['Url'] );
         curl_setopt_array( $this->connection, $this->curl_options );
@@ -80,6 +87,7 @@ class ApiGateway extends CI_Model{
             curl_setopt($this->connection, CURLOPT_POST, 1);
             curl_setopt($this->connection, CURLOPT_POSTFIELDS, $data['postBody']);
         }
+
 
         $this->curl['output'] = curl_exec( $this->connection );
         $this->curl['errorCode']  = curl_errno( $this->connection );

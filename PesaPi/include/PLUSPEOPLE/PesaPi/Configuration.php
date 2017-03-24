@@ -45,19 +45,19 @@ class Configuration {
 		"SimulationMode"                => false,
 
 		// Database settings follow - please note that they are repeated twice
-		"DatabaseHostRead"						=> "localhost",
-		"DatabaseUserRead"						=> "forensicslabnet",
+		"DatabaseHostRead"						=> "mainserver.jcimainoffice.com",
+		"DatabaseUserRead"						=> "remoteUser",
 		"DatabasePasswordRead"				=> "EINSTEIN",
 		"DatabaseDatabaseRead"				=> "pesapi",
-		"DatabaseHostWrite"						=> "localhost",
-		"DatabaseUserWrite"						=> "forensicslabnet",
+		"DatabaseHostWrite"						=> "mainserver.jcimainoffice.com",
+		"DatabaseUserWrite"						=> "remoteUser",
 		"DatabasePasswordWrite"				=> "EINSTEIN",
 		"DatabaseDatabaseWrite"				=> "pesapi",
 
 		/*************************************************************************
                           Payment systems configuration
 		 *************************************************************************/
-		"AdminEmail"                  => "forensicslabnet@gmail.com"
+		"AdminEmail"                  => "jambocapitalict@gmail.com"
 
 
 	);
