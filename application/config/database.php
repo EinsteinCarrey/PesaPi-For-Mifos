@@ -70,15 +70,41 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 | The $query_builder variables lets you determine whether or not to load
 | the query builder class.
 */
-$active_group = 'default';
+if(ENVIRONMENT == "production"){
+    $active_group = 'productionServer';
+}else {
+    $active_group = 'developmentServer';
+}
 $query_builder = TRUE;
 
-$db['default'] = array(
+$db['productionServer'] = array(
 	'dsn'	=> '',
 	'hostname' => 'mainserver.jcimainoffice.com',
 	'username' => 'remoteUser',
 	'password' => 'EINSTEIN',
 	'database' => 'pesapi',
+	'dbdriver' => 'mysqli',
+	'dbprefix' => '',
+	'pconnect' => FALSE,
+	'db_debug' => (ENVIRONMENT !== 'production'),
+	'cache_on' => FALSE,
+	'cachedir' => '',
+	'char_set' => 'utf8',
+	'dbcollat' => 'utf8_general_ci',
+	'swap_pre' => '',
+	'encrypt' => FALSE,
+	'compress' => FALSE,
+	'stricton' => FALSE,
+	'failover' => array(),
+	'save_queries' => TRUE
+);
+
+$db['developmentServer'] = array(
+	'dsn'	=> '',
+	'hostname' => 'mainserver.jcimainoffice.com',
+	'username' => 'remoteUser',
+	'password' => 'EINSTEIN',
+	'database' => 'pesapi_testing',
 	'dbdriver' => 'mysqli',
 	'dbprefix' => '',
 	'pconnect' => FALSE,

@@ -9,6 +9,7 @@ class Core extends CI_Controller {
     function __construct()
     {
         parent::__construct();
+        $this->load->model('LocalDBHandler');
     }
 
     public function receivePaymentViaMpesa(){
@@ -53,7 +54,10 @@ class Core extends CI_Controller {
      }
 
     public function index(){
-        $this->receivePaymentViaMpesa();
+        $data['mpesaTransactions'] = $this->LocalDBHandler->getMpesaTransactions();
+        $this->load->view('MpesaTransactions', $data);
     }
+
+
 
 }

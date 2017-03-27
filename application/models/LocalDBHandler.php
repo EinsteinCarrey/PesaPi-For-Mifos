@@ -13,6 +13,14 @@ class LocalDBHandler extends CI_Model {
         $this->load->database();
     }
 
+    public function getMpesaTransactions(){
+        $this->db->select('receipt,round(amount/100) as amount,mifos_account_number,name,phonenumber,time,amount_posted');
+        $this->db->from('pesapi_payment');
+        $this->db->join('pesapi_payments_posted_to_mifos','pesapi_payments_posted_to_mifos.mpesa_recepit_no = pesapi_payment.receipt', 'left outer');
+        $query = $this->db->get();
+        return $query->result();
+    }
+
     public function recordTransactionThatHaveBeenPostedToMifosDatabase($data){
         $project_media = array(
             'mpesa_recepit_no' => $data['receiptNumber'],
