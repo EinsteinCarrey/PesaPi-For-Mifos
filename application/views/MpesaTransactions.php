@@ -2,7 +2,8 @@
 <html>
 <head>
 	<meta charset="utf-8">
-	<link rel="shortcut icon" type="image/ico" href="http://www.datatables.net/favicon.ico">
+    <base href="<?= base_url(); ?>">
+	<link rel="shortcut icon" type="image/ico" href="">
 	<meta name="viewport" content="initial-scale=1.0, maximum-scale=2.0">
 	<title>Mpesa Transactions</title>
 	<link rel="stylesheet" type="text/css" href="media/css/semantic.min.css">
@@ -18,7 +19,6 @@
     <script type="text/javascript" language="javascript" src="media/js/pdfmake.min.js"></script>
     <script type="text/javascript" language="javascript" src="media/js/vfs_fonts.js"></script>
     <script type="text/javascript" language="javascript" src="media/js/buttons.html5.min.js"></script>
-
     <script type="text/javascript" language="javascript" class="init">
 
         var dataSet = [

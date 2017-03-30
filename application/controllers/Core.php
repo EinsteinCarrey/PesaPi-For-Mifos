@@ -3,11 +3,8 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Core extends CI_Controller {
 
-    //ToDo(Einstein): check This Before Deploying
-    public $environment = "production"; //testing
 
-    function __construct()
-    {
+    function __construct(){
         parent::__construct();
         $this->load->model('LocalDBHandler');
     }

@@ -17,7 +17,6 @@ class MpesaClientHandler extends CI_Controller {
     function __construct(){
         parent::__construct();
         $this->load->model('ApiGateway');
-        $this->load->model('LocalDBHandler');
     }
 
     function getPesaPiPostedData(){
@@ -150,6 +149,8 @@ class MpesaClientHandler extends CI_Controller {
 
     function makeRepaymentToALoanAccount($data)
     {
+
+        $this->load->model('LocalDBHandler');
         $clientsLoanAccounts = $this->getClientActiveLoanAccounts($data['clientID'] );
 
         $firstLoanAccountID = ($clientsLoanAccounts[0]->id);
@@ -179,6 +180,8 @@ class MpesaClientHandler extends CI_Controller {
 
     function makeDepositToClientSavingsAccount($data)
     {
+
+        $this->load->model('LocalDBHandler');
         $clientSavingsAccounts = $this->getClientActiveSavingsAccounts($data['clientID'] );
         $firstClientSavingsAccountID = ($clientSavingsAccounts[0]->id);
         $firstClientSavingsAccountNumber = ($clientSavingsAccounts[0]->accountNo);
