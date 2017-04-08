@@ -10,6 +10,11 @@
 	<link rel="stylesheet" type="text/css" href="media/css/dataTables.semanticui.css">
 	<link rel="stylesheet" type="text/css" href="media/css/buttons.dataTables.min.css">
 	<style type="text/css" class="init"></style>
+	<style type="text/css">
+        body{
+            background-color: #e6efd1;
+        }
+    </style>
 	<script type="text/javascript" language="javascript" src="media/js/jquery.js"></script>
 	<script type="text/javascript" language="javascript" src="media/js/jquery.dataTables.js"></script>
 	<script type="text/javascript" language="javascript" src="media/js/dataTables.semanticui.js"></script>
@@ -47,7 +52,7 @@
 
         $(document).ready(function() {
             $('#mpesaTransactions').DataTable({
-                dom: 'Blfrtip',
+                dom: 'flBip',
                 data: dataSet,
                 columns: [
                     { title: "Phone Number" },
@@ -69,7 +74,7 @@
                     'csvHtml5',
                     'pdfHtml5'
                 ],
-                "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]]
+                "lengthMenu": [[50, 100, -1], [50, 100, "All"]]
             });
         } );
 

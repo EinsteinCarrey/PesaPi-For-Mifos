@@ -23,8 +23,12 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 | a PHP script and you can easily do that on your own.
 |
 */
-$config['base_url'] = 'http://'.$_SERVER['SERVER_ADDR'].':'.$_SERVER['SERVER_PORT'].'/pesapi/';
 
+if(ENVIRONMENT == 'production') {
+    $config['base_url'] = 'https://' . $_SERVER['SERVER_ADDR'] . '/MPESA/';
+}else {
+    $config['base_url'] = 'http://' . $_SERVER['SERVER_ADDR'] . ':' . $_SERVER['SERVER_PORT'] . '/pesapi/';
+}
 /*
 |--------------------------------------------------------------------------
 | Index File

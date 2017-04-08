@@ -10,6 +10,7 @@ class Core extends CI_Controller {
     }
 
     public function receivePaymentViaMpesa(){
+
         load_this_controller('MpesaClientHandler');
 
         if(ENVIRONMENT == "production"){
@@ -38,19 +39,23 @@ class Core extends CI_Controller {
         $clientHasAnActiveLoan = $this->MpesaClientHandler_->clientHasActiveLoanAccount($data);
 
         if($clientHasAnActiveLoan){
-            $result = $this->MpesaClientHandler_->makeRepaymentToALoanAccount($data);
+            $outPut = $this->MpesaClientHandler_->makeRepaymentToALoanAccount($data);
         }else{
-            $result = $this->MpesaClientHandler_->makeDepositToClientSavingsAccount($data);
+            $outPut = $this->MpesaClientHandler_->makeDepositToClientSavingsAccount($data);
         }
 
-     }
+        //Confirm That amount has been posted successfully
+        if(array_key_exists('resourceId',$outPut['result'])){
 
-    public function sendSmsMessageToClient($data=null){
-        load_this_controller('SMSCenter');
-        $this->SMSCenter_->sendMessageToClient($data);
-     }
+            $this->LocalDBHandler->recordTransactionThatHaveBeenPostedToMifosDatabase($outPut['data']);
+            $data['messageBody'] = "Confirmed.\r\n Amount of Ksh " . $data['amount'] . " has been credited to your Jambo Account.";
+            $this->MpesaClientHandler_->sendMessageToClient($data);
+        }
+
+    }
 
     public function index(){
+
         $data['mpesaTransactions'] = $this->LocalDBHandler->getMpesaTransactions();
         $this->load->view('MpesaTransactions', $data);
     }

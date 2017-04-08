@@ -14,9 +14,14 @@ class MpesaClientHandler extends CI_Controller {
     private $ClientAccounts;
     private $errorMessage;
 
+    private $uwaziiPassword ='IVPwWOgW';
+    private $uwaziiUsername ='jambocapitalict';
+    private $messageSender  = "JAMBO-CAP";
+
     function __construct(){
         parent::__construct();
         $this->load->model('ApiGateway');
+        $this->load->model('LocalDBHandler');
     }
 
     function getPesaPiPostedData(){
@@ -147,6 +152,20 @@ class MpesaClientHandler extends CI_Controller {
 
     }
 
+    function getDateFromEpochSecondsTimestamp($epochTimestamp){
+
+        $months = explode(
+            " ",
+            "January February March April May June July August September October November December"
+        );
+
+        $time =  date("d", $epochTimestamp)." "; //transaction Date
+        $time .=  $months[date("m", $epochTimestamp)-1]." "; //append moths short Name
+        $time .=  date("Y", $epochTimestamp); // append year
+
+        return $time;
+    }
+
     function makeRepaymentToALoanAccount($data)
     {
 
@@ -173,15 +192,13 @@ class MpesaClientHandler extends CI_Controller {
         $postBody = json_encode($jsonPostBody);
         $data['isPostRequest'] = true;
         $data['postBody'] = $postBody;
-        $outPut = $this->ApiGateway->queryMifosServer($data);
-        $this->LocalDBHandler->recordTransactionThatHaveBeenPostedToMifosDatabase($jsonPostBody);
+        $outPut['result'] = $this->ApiGateway->queryMifosServer($data);
+        $outPut['data'] = $jsonPostBody;
         return $outPut;
     }
 
     function makeDepositToClientSavingsAccount($data)
     {
-
-        $this->load->model('LocalDBHandler');
         $clientSavingsAccounts = $this->getClientActiveSavingsAccounts($data['clientID'] );
         $firstClientSavingsAccountID = ($clientSavingsAccounts[0]->id);
         $firstClientSavingsAccountNumber = ($clientSavingsAccounts[0]->accountNo);
@@ -202,24 +219,41 @@ class MpesaClientHandler extends CI_Controller {
         $postBody = json_encode($jsonPostBody);
         $data['isPostRequest'] = true;
         $data['postBody'] = $postBody;
-        $outPut = $this->ApiGateway->queryMifosServer($data);
-        $this->LocalDBHandler->recordTransactionThatHaveBeenPostedToMifosDatabase($jsonPostBody);
-
+        $outPut['result'] = $this->ApiGateway->queryMifosServer($data);
+        $outPut['data'] = $jsonPostBody;
         return $outPut;
     }
 
-    function getDateFromEpochSecondsTimestamp($epochTimestamp){
 
-        $months = explode(
-            " ",
-            "January February March April May June July August September October November December"
+    function sendMessageToClient($data = null){
+
+        if(ENVIRONMENT != 'production') {
+            $data['phoneNumber'] = "254707842711";
+        }
+
+        $jsonData = array(
+            "authentication"=> array(
+                "username" => $this->uwaziiUsername,
+                "password" => $this->uwaziiPassword
+            ),
+            "messages" => array(
+                array(
+                    "sender" => $this->messageSender,
+                    "text" => $data['messageBody'],
+                    "recipients" => array(
+                        array(
+                            "gsm" => $data['phoneNumber']
+                        )
+                    )
+                )
+            )
         );
 
-        $time =  date("d", $epochTimestamp)." "; //transaction Date
-        $time .=  $months[date("m", $epochTimestamp)-1]." "; //append moths short Name
-        $time .=  date("Y", $epochTimestamp); // append year
+        $data['postBody'] = json_encode($jsonData);
+        $data['isPostRequest'] = true;
 
-        return $time;
+        $outPut = $this->ApiGateway->queryUwaziiSmsServer( $data );
+        print_r($outPut);
     }
 
 }
