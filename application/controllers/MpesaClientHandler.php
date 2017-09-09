@@ -175,7 +175,6 @@ class MpesaClientHandler extends CI_Controller {
 
         $this->load->model('LocalDBHandler');
         $clientsLoanAccounts = $this->getClientActiveLoanAccounts($data['clientID'] );
-
         $firstLoanAccountID = ($clientsLoanAccounts[0]->id);
         $firstLoanAccountNumber= ($clientsLoanAccounts[0]->accountNo);
 
@@ -198,6 +197,7 @@ class MpesaClientHandler extends CI_Controller {
         $data['postBody'] = $postBody;
         $outPut['result'] = $this->ApiGateway->queryMifosServer($data);
         $outPut['data'] = $jsonPostBody;
+        $outPut['new_balance'] = ($clientsLoanAccounts[0]->loanBalance - $data["amount"]);
         return $outPut;
     }
 
@@ -225,6 +225,7 @@ class MpesaClientHandler extends CI_Controller {
         $data['postBody'] = $postBody;
         $outPut['result'] = $this->ApiGateway->queryMifosServer($data);
         $outPut['data'] = $jsonPostBody;
+        $outPut['new_balance'] = $clientSavingsAccounts[0]->accountBalance + $data["amount"];
         return $outPut;
     }
 

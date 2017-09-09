@@ -50,25 +50,32 @@ class Core extends CI_Controller {
         if($clientHasAnActiveLoan){
             # Make repayments
             $outPut = $this->MpesaClientHandler_->makeRepaymentToALoanAccount($data);
+            $account_type = "loan";
 
         }else{
+
             # Deposit to savings account
             $outPut = $this->MpesaClientHandler_->makeDepositToClientSavingsAccount($data);
-
+            $account_type = "savings";
         }
 
         print_r($outPut);
 
-        //Confirm That amount has been posted successfully
+        # Confirm mpesa message has been processed and posted successfully
         if(array_key_exists('resourceId',$outPut['result'])){
 
             # record transaction in Mpesa register
             $this->LocalDBHandler->recordTransactionThatHaveBeenPostedToMifosDatabase($outPut['data']);
 
             # send a message to clients
-            $data['messageBody'] = "Confirmed. Ksh " .
-                $data['amount']+$transaction_charge . " has been received. to your Jambo Account.";
+            $sms_feedback_message = "Confirmed. Ksh ";
+            $sms_feedback_message.= $data['amount']+$transaction_charge;
+            $sms_feedback_message.= " has been received. \n";
+            $sms_feedback_message.= "Your new ".$account_type . " balance is Ksh.".$outPut['new_balance']."/=";
+            $data['messageBody'] = $sms_feedback_message;
             $this->MpesaClientHandler_->sendMessageToClient($data);
+
+            print_r($data['messageBody']);
 
             # Deposit Ksh 5/= to BulkSMS charges account
             $transaction_data = $data;
