@@ -1,16 +1,14 @@
 # PesaPi-For-Mifos
-An intergration of Mifos and Mpesa Money Platform Using PesaPi
-
 PesaPi-for-Mifos is a plugin designed to automate record of Mpesa payments into the MifosX system.
-PesaPi-for-Mifos is Written In PHP, it utilizes CodeIgnitor PHP Framework.
 
-Compatible with MifosX Fineract (16.6).
-Tested with Safaricom's Mpesa mobile Payment Platform.
+This plugin is Written In PHPusing the CodeIgnitor open-source PHP Framework.
+
+This plugin is compatible with MifosX Fineract version 16.6 and above
 
 **Requirements For Mpesa Plugin**
-.Http Server(Preferably Apache)
-.Php version 5 or above
-.Mysql 5.5 or above
+Http web Server e.g. Apache
+PHP version 5 or later
+Mysql 5.5 or later
 
 
 **Requirements For SMS Plugin**

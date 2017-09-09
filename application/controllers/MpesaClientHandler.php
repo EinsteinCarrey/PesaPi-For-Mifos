@@ -116,7 +116,11 @@ class MpesaClientHandler extends CI_Controller {
         return $clientHasAnActiveLoanAccount;
     }
 
-    function getClientActiveSavingsAccounts(){
+    function getClientActiveSavingsAccounts($clientID=null){
+
+        if(!is_null($clientID)){
+            $this->getClientAccounts($clientID);
+        }
         //if Client Has Savings Account(s)
         if(array_key_exists('savingsAccounts',$this->ClientAccounts)){
 

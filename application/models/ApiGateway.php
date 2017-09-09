@@ -1,9 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: EinsteinCarrey
- * Date: 3/20/2017
- * Time: 10:12 AM
+ * @property resource connection
  */
 
 class ApiGateway extends CI_Model{
@@ -57,7 +54,7 @@ class ApiGateway extends CI_Model{
         if(ENVIRONMENT == "production") {
             $mifosBaseUrl ="https://127.0.0.1/fineract-provider/api/v1/";
         }else{
-            $mifosBaseUrl ="https://192.168.0.50/fineract-provider/api/v1/";
+            $mifosBaseUrl ="https://197.248.110.202/fineract-provider/api/v1/";
         }
         $data['Url'] = $mifosBaseUrl . $data['specificQueryUrl'];
 
@@ -82,13 +79,14 @@ class ApiGateway extends CI_Model{
         $this->connection = curl_init( $data['Url'] );
         curl_setopt_array( $this->connection, $this->curl_options );
 
-        //if this is a post request /*default is GET*/
+        // Check if this should be a post request
+        // use GET method by default
         if(isset($data['isPostRequest']) && ($data['isPostRequest'])) {
             curl_setopt($this->connection, CURLOPT_POST, 1);
             curl_setopt($this->connection, CURLOPT_POSTFIELDS, $data['postBody']);
         }
 
-
+        # make a curl request and capture output
         $this->curl['output'] = curl_exec( $this->connection );
         $this->curl['errorCode']  = curl_errno( $this->connection );
         $this->curl['errorMessage']  = curl_error( $this->connection );

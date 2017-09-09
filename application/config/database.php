@@ -101,10 +101,10 @@ $db['productionServer'] = array(
 
 $db['developmentServer'] = array(
 	'dsn'	=> '',
-	'hostname' => 'mainserver.jcimainoffice.com',
-	'username' => 'remoteUser',
+	'hostname' => 'localhost',
+	'username' => 'forensicslabnet',
 	'password' => 'EINSTEIN',
-	'database' => 'pesapi_testing',
+	'database' => 'pesapi',
 	'dbdriver' => 'mysqli',
 	'dbprefix' => '',
 	'pconnect' => FALSE,
