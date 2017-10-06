@@ -38,8 +38,8 @@ class Core extends CI_Controller {
         $client = $this->MpesaClientHandler_->findClientByPhoneNumber($data['phoneNumber']);
         $data['clientID'] = $client->entityId;
 
-        # check if client has an active loan
-        $clientHasAnActiveLoan = $this->MpesaClientHandler_->clientHasActiveLoanAccount($data);
+//        # check if client has an active loan
+//        $clientHasAnActiveLoan = $this->MpesaClientHandler_->clientHasActiveLoanAccount($data);
 
         # Deduct (Transaction charges) Ksh 5/= from the amount posted by client
         $transaction_charge = 5;
@@ -47,21 +47,21 @@ class Core extends CI_Controller {
         $amount_after_deduction = ($amount_posted - $transaction_charge);
         $data['amount'] = $amount_after_deduction;
 
-        if($clientHasAnActiveLoan){
-            # Make repayments
-            $outPut = $this->MpesaClientHandler_->makeRepaymentToALoanAccount($data);
-            $account_type = "loan";
+//        if($clientHasAnActiveLoan){
+//            # Make repayments
+//            $outPut = $this->MpesaClientHandler_->makeRepaymentToALoanAccount($data);
+//            $account_type = "loan";
+//
+//        }else{
 
-        }else{
+        # Deposit to savings account
+        $outPut = $this->MpesaClientHandler_->makeDepositToClientSavingsAccount($data);
+        $account_type = "savings";
 
-            # Deposit to savings account
-            $outPut = $this->MpesaClientHandler_->makeDepositToClientSavingsAccount($data);
-            $account_type = "savings";
-        }
+//        }
 
-        print_r($outPut);
 
-        # Confirm mpesa message has been processed and posted successfully
+        # Confirm mpesa payment has been processed and posted successfully
         if(array_key_exists('resourceId',$outPut['result'])){
 
             # record transaction in Mpesa register
@@ -71,11 +71,10 @@ class Core extends CI_Controller {
             $sms_feedback_message = "Confirmed. Ksh ";
             $sms_feedback_message.= $data['amount']+$transaction_charge;
             $sms_feedback_message.= " has been received. \n";
-            $sms_feedback_message.= "Your new ".$account_type . " balance is Ksh.".$outPut['new_balance']."/=";
+            $sms_feedback_message.= "Your new ".$account_type . " balance is Ksh.".$outPut['new_balance']."/=\n\n";
             $data['messageBody'] = $sms_feedback_message;
             $this->MpesaClientHandler_->sendMessageToClient($data);
 
-            print_r($data['messageBody']);
 
             # Deposit Ksh 5/= to BulkSMS charges account
             $transaction_data = $data;
