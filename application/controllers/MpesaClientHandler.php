@@ -68,7 +68,7 @@ class MpesaClientHandler extends CI_Controller {
 
         //check if Client exists
         if(sizeof($client)<1){
-            print_r("There is no recorded client with phone number ". $phoneNumber );
+//            print_r("There is no recorded client with phone number ". $phoneNumber );
             die();
         }
 
@@ -229,6 +229,24 @@ class MpesaClientHandler extends CI_Controller {
         return $outPut;
     }
 
+    function approveTransaction($data){
+
+        $transactionID = $data['result']->commandId;
+
+        $data['specificQueryUrl'] =  "makercheckers/".$transactionID."?command=approve";
+
+        $jsonPostBody = array(
+            "auditId" => $transactionID
+        );
+
+        $postBody = json_encode($jsonPostBody);
+        $data['isPostRequest'] = true;
+        $data['postBody'] = $postBody;
+        $outPut['result'] = $this->ApiGateway->queryMifosServer($data);
+        $outPut['data'] = $jsonPostBody;
+        return $outPut;
+    }
+
 
     function sendMessageToClient($data = null){
 
@@ -257,8 +275,8 @@ class MpesaClientHandler extends CI_Controller {
         $data['postBody'] = json_encode($jsonData);
         $data['isPostRequest'] = true;
 
-        $outPut = $this->ApiGateway->queryUwaziiSmsServer( $data );
-        print_r($outPut);
+        $this->ApiGateway->queryUwaziiSmsServer( $data );
+
     }
 
 }

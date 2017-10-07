@@ -64,6 +64,10 @@ class Core extends CI_Controller {
         # Confirm mpesa payment has been processed and posted successfully
         if(array_key_exists('resourceId',$outPut['result'])){
 
+            # Approve transaction to savings account
+            $this->MpesaClientHandler_->approveTransaction($outPut);
+
+
             # record transaction in Mpesa register
             $this->LocalDBHandler->recordTransactionThatHaveBeenPostedToMifosDatabase($outPut['data']);
 
@@ -80,7 +84,10 @@ class Core extends CI_Controller {
             $transaction_data = $data;
             $transaction_data['amount'] = 5;
             $transaction_data['clientID'] = 7879;
-            $this->MpesaClientHandler_->makeDepositToClientSavingsAccount($transaction_data);
+            $bulk_sms_charge = $this->MpesaClientHandler_->makeDepositToClientSavingsAccount($transaction_data);
+
+            # Approve transaction to BulkSMS charges account
+            $this->MpesaClientHandler_->approveTransaction($bulk_sms_charge);
         }
 
     }
