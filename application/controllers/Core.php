@@ -38,8 +38,8 @@ class Core extends CI_Controller {
         $client = $this->MpesaClientHandler_->findClientByPhoneNumber($data['phoneNumber']);
         $data['clientID'] = $client->entityId;
 
-//        # check if client has an active loan
-//        $clientHasAnActiveLoan = $this->MpesaClientHandler_->clientHasActiveLoanAccount($data);
+        # check if client has an active loan
+        $clientHasAnActiveLoan = $this->MpesaClientHandler_->clientHasActiveLoanAccount($data);
 
         # Deduct (Transaction charges) Ksh 5/= from the amount posted by client
         $transaction_charge = 5;
@@ -47,18 +47,18 @@ class Core extends CI_Controller {
         $amount_after_deduction = ($amount_posted - $transaction_charge);
         $data['amount'] = $amount_after_deduction;
 
-//        if($clientHasAnActiveLoan){
-//            # Make repayments
-//            $outPut = $this->MpesaClientHandler_->makeRepaymentToALoanAccount($data);
-//            $account_type = "loan";
-//
-//        }else{
+        if($clientHasAnActiveLoan){
+            # Make repayments
+            $outPut = $this->MpesaClientHandler_->makeRepaymentToALoanAccount($data);
+            $account_type = "loan";
 
-        # Deposit to savings account
-        $outPut = $this->MpesaClientHandler_->makeDepositToClientSavingsAccount($data);
-        $account_type = "savings";
+        }else{
 
-//        }
+            # Deposit to savings account
+            $outPut = $this->MpesaClientHandler_->makeDepositToClientSavingsAccount($data);
+            $account_type = "savings";
+
+        }
 
 
         # Confirm mpesa payment has been processed and posted successfully
