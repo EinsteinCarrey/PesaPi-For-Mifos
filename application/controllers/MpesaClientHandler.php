@@ -100,6 +100,21 @@ class MpesaClientHandler extends CI_Controller {
 
     }
 
+    function accountBelongsToStaff($data){
+        $ActiveSavingsAccounts = $this->getClientActiveSavingsAccounts($data['clientID']);
+
+        $accountBelongsToStaff = false;
+        foreach ($ActiveSavingsAccounts as $clientAccount){
+            $productName = strtolower($clientAccount->productName);
+
+            if(strstr($productName, 'staff')){
+                $accountBelongsToStaff = true;
+            }
+        }
+
+        return $accountBelongsToStaff;
+    }
+
     function clientHasActiveLoanAccount($data){
         $this->getClientAccounts($data['clientID']);
 

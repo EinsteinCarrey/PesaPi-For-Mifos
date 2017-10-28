@@ -29,7 +29,7 @@ class Core extends CI_Controller {
         }
 
         if($this->MpesaClientHandler_->dataHasErrors($data)) {
-            //ToDo: Log error messages
+            // ToDo: Log error messages
             // $this->errorMessage;
             die();
         }
@@ -41,11 +41,18 @@ class Core extends CI_Controller {
         # check if client has an active loan
         $clientHasAnActiveLoan = $this->MpesaClientHandler_->clientHasActiveLoanAccount($data);
 
-        # Deduct (Transaction charges) Ksh 5/= from the amount posted by client
-        $transaction_charge = 5;
-        $amount_posted = $data['amount'];
-        $amount_after_deduction = ($amount_posted - $transaction_charge);
-        $data['amount'] = $amount_after_deduction;
+        # check if this account is a staff account
+        $accountBelongsToStaff = $this->MpesaClientHandler_->accountBelongsToStaff($data);
+
+        $transaction_charge = 0;
+        if(!$accountBelongsToStaff) {
+
+            # Deduct (Transaction charges) Ksh 5/= from the amount posted by client
+            $transaction_charge = 5;
+            $amount_posted = $data['amount'];
+            $amount_after_deduction = ($amount_posted - $transaction_charge);
+            $data['amount'] = $amount_after_deduction;
+        }
 
         if($clientHasAnActiveLoan){
             # Make repayments
@@ -79,15 +86,18 @@ class Core extends CI_Controller {
             $data['messageBody'] = $sms_feedback_message;
             $this->MpesaClientHandler_->sendMessageToClient($data);
 
+            if(!$accountBelongsToStaff) {
 
-            # Deposit Ksh 5/= to BulkSMS charges account
-            $transaction_data = $data;
-            $transaction_data['amount'] = 5;
-            $transaction_data['clientID'] = 7879;
-            $bulk_sms_charge = $this->MpesaClientHandler_->makeDepositToClientSavingsAccount($transaction_data);
+                # Deposit Ksh 5/= to BulkSMS charges account
+                $transaction_data = $data;
+                $transaction_data['amount'] = 5;
+                $transaction_data['clientID'] = 7879;
+                $bulk_sms_charge = $this->MpesaClientHandler_->makeDepositToClientSavingsAccount($transaction_data);
 
-            # Approve transaction to BulkSMS charges account
-            $this->MpesaClientHandler_->approveTransaction($bulk_sms_charge);
+                # Approve transaction to BulkSMS charges account
+                $this->MpesaClientHandler_->approveTransaction($bulk_sms_charge);
+
+            }
         }
 
     }
