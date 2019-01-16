@@ -10,13 +10,13 @@
 class MpesaClientHandler extends CI_Controller {
 
 
-    private $secret ='FWv{VvB7#dSsJ(\S5_f)3C3S';
+    private $secret ='';
     private $ClientAccounts;
     private $errorMessage;
 
-    private $uwaziiPassword ='IVPwWOgW';
-    private $uwaziiUsername ='jambocapitalict';
-    private $messageSender  = "JAMBO-CAP";
+    private $uwaziiPassword ='';
+    private $uwaziiUsername ='';
+    private $messageSender  ='';
 
     function __construct(){
         parent::__construct();
